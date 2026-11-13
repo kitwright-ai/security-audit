@@ -1,0 +1,39 @@
+{
+  "name": "kitwright-security-audit",
+  "version": "0.1.0",
+  "description": "Static security audit for Next.js apps: secrets, auth, tenant scoping, webhooks, rate limiting, headers and Supabase RLS.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "kitwright-security-audit": "./scripts/audit.mjs"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kitwright-ai/security-audit.git"
+  },
+  "homepage": "https://kitwright.ai",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "scripts",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "security",
+    "audit",
+    "nextjs",
+    "supabase",
+    "claude-code",
+    "agent-skill",
+    "vibe-coding"
+  ]
+}

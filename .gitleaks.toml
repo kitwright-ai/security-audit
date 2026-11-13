@@ -1,0 +1,6 @@
+# The fixtures and tests contain deliberately fake keys.
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''^fixtures/''', '''^test/''']
