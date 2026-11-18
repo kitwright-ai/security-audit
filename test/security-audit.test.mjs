@@ -9,8 +9,8 @@ import { isSuppressed, maskSecrets } from "../skills/security-audit/scripts/lib/
 import { toMarkdown } from "../skills/security-audit/scripts/lib/report.mjs";
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
-const INSECURE = here("../fixtures/insecure-app");
-const SECURE = here("../fixtures/secure-app");
+const INSECURE = here("../fixtures/security-audit/insecure-app");
+const SECURE = here("../fixtures/security-audit/secure-app");
 const CLI = here("../skills/security-audit/scripts/audit.mjs");
 
 const insecure = runAudit(INSECURE, { git: false });

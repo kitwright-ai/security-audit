@@ -1,0 +1,7 @@
+---
+description: Supabase usage
+globs: ["**/*.ts", "**/*.tsx"]
+---
+
+- Use the server client from lib/supabase/server.ts in server components and actions.
+- Never use the service role key in client components.

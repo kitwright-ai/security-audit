@@ -1,0 +1,10 @@
+{
+  "name": "clean-app",
+  "private": true,
+  "dependencies": {
+    "next": "15.5.0",
+    "react": "19.1.0",
+    "stripe": "18.0.0",
+    "zod": "4.1.0"
+  }
+}

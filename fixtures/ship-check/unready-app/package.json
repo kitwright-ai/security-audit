@@ -1,0 +1,16 @@
+{
+  "name": "unready-app",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.49.4",
+    "next": "16.4.6",
+    "react": "19.2.0",
+    "resend": "6.1.0",
+    "stripe": "19.1.0"
+  }
+}

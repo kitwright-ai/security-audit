@@ -1,0 +1,30 @@
+{
+  "name": "ready-app",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@next/third-parties": "16.4.6",
+    "@sentry/nextjs": "10.20.0",
+    "drizzle-orm": "0.45.4",
+    "next": "16.4.6",
+    "postgres": "3.4.7",
+    "react": "19.2.0",
+    "resend": "6.1.0",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.5",
+    "typescript": "5.9.3",
+    "vitest": "4.0.0"
+  }
+}

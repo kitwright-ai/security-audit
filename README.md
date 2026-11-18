@@ -1,104 +1,84 @@
-# Security audit skill for AI-built Next.js apps
+# Kitwright skills
 
-A free agent skill (Claude Code, Cursor, Codex) plus a zero-dependency scanner that finds the
-security problems AI-generated apps usually ship with. Made by [Kitwright](https://kitwright.ai)
-— production-ready Next.js kits for apps built with AI.
+Free agent skills for Next.js apps built with AI — Claude Code, Cursor, Codex and any agent that
+reads skills. Each one pairs instructions for your agent with a zero-dependency scanner, so the
+agent works from real findings in your code instead of generic advice.
+
+Made by [Kitwright](https://kitwright.ai) — production-ready Next.js kits for apps built with AI.
 
 ```bash
-npx skills add kitwright-ai/security-audit
+npx skills add kitwright-ai/skills
 ```
 
-Then ask your agent: *"run a security audit"*.
+Pick the skills and agents you want, then ask your agent in plain words: *"run a security
+audit"*, *"is this ready to launch?"*, *"write an AGENTS.md for this project"*.
 
-## What it checks
+## Skills
 
-| Check | What it catches |
-| --- | --- |
-| `hardcoded-secret` | Stripe/AWS/GitHub/OpenAI/Resend keys, private keys, Supabase `service_role` JWTs, DB URLs with passwords |
-| `env-file-committed` / `env-file-not-ignored` | `.env` files in git or not git-ignored |
-| `public-env-secret` | `NEXT_PUBLIC_*SECRET*`-style variables and secrets inlined via `next.config` `env` |
-| `client-secret-env` | Client components reading server-only variables |
-| `route-without-auth` | Route handlers with no authentication |
-| `action-without-auth` | Server actions (file-level and inline) with no authentication |
-| `query-without-tenant-filter` | Drizzle / Prisma / raw SQL queries not filtered by organization or user (IDOR) |
-| `webhook-without-signature` / `webhook-parsed-body` | Webhooks that trust the payload or verify a re-serialized body |
-| `public-route-without-rate-limit` | Sign-in, sign-up, forms and public actions without rate limiting |
-| `missing-security-headers` | CSP, frame protection, nosniff, HSTS, Referrer-Policy |
-| `supabase-rls-disabled` / `supabase-permissive-policy` / `supabase-rls-no-policies` / `supabase-rls-unverified` | Tables exposed to the anon key |
-
-## Example report
-
-This is the scanner's output on [`fixtures/insecure-app`](fixtures/insecure-app), a deliberately
-insecure Next.js + Supabase project: **17 high and 7 medium findings**. Read the full report in
-[`examples/report.md`](examples/report.md). An excerpt:
-
-> ### 🔴 HIGH — Route handler `GET, DELETE /api/invoices` has no authentication
->
-> `app/api/invoices/route.ts:4`
->
-> ```
-> export async function GET() {
-> ```
->
-> **Why it matters:** Anyone on the internet can call this endpoint directly; the UI hiding a
-> button does not protect it.
->
-> **Fix:** Authenticate and authorize at the start of every handler (e.g. wrap it in
-> `withAuthRoute({ permission })`). If it is intentionally public, add a
-> `// security-audit: public <reason>` comment and rate limit it.
-
-With the skill, the agent goes further than the scanner: it confirms or dismisses each finding
-by reading the code, checks what static analysis can't (authorization logic, file uploads,
-CORS), writes `security-audit-report.md` and offers fixes.
+| Skill | Ask your agent | What it does | Example output |
+| --- | --- | --- | --- |
+| [**security-audit**](skills/security-audit) | "run a security audit" | Finds leaked secrets, `NEXT_PUBLIC_` keys, routes and server actions without auth, queries without tenant filters (IDOR), unverified webhooks, missing rate limits and security headers, and Supabase tables without RLS. | [report](examples/security-audit-report.md) |
+| [**stripe-audit**](skills/stripe-audit) | "check my Stripe integration" | Catches the Stripe mistakes that lose money or give away access: unsigned or non-idempotent webhooks, subscriptions never revoked, access granted from the success page, prices sent by the client, leaked keys. | [report](examples/stripe-audit-report.md) |
+| [**env-hardening**](skills/env-hardening) | "validate my env vars" | Maps every `process.env` read, flags secrets in `NEXT_PUBLIC_` and server variables used in client components, and drafts a Zod-validated `env.ts` plus a complete `.env.example`. | [report](examples/env-hardening-report.md) |
+| [**ship-check**](skills/ship-check) | "is it ready to launch?" | Production-readiness review before launch or client handover: hidden build errors, error and 404 pages, SEO and sharing, env docs, error tracking, migrations and backups, legal pages, email DNS, and the launch-day checks only you can confirm. | [report](examples/ship-check-report.md) |
+| [**agent-rules**](skills/agent-rules) | "write an AGENTS.md for this project" | Inspects your project and writes an `AGENTS.md` (plus a `CLAUDE.md` that imports it) with your real stack, commands, structure and security rules — merging any existing `.cursorrules` or agent files. | [AGENTS.md](examples/agent-rules-AGENTS.md) |
 
 ## Install
 
-Requires Node.js 22.20+ for the installer; the scanner itself runs on Node 18+.
+Requires Node.js 22.20+ for the installer; the scanners run on Node 18+.
 
 ```bash
-npx skills add kitwright-ai/security-audit                 # pick your agents interactively
-npx skills add kitwright-ai/security-audit -a claude-code  # Claude Code only (.claude/skills/)
-npx skills add kitwright-ai/security-audit -g              # all your projects
+npx skills add kitwright-ai/skills                               # choose skills and agents
+npx skills add kitwright-ai/skills --skill security-audit        # just one skill
+npx skills add kitwright-ai/skills --skill stripe-audit -a claude-code
+npx skills add kitwright-ai/skills -g                            # for all your projects
 ```
 
 [`skills`](https://github.com/vercel-labs/skills) installs to Claude Code (`.claude/skills/`),
-Cursor and Codex (`.agents/skills/`) and many other agents. Only the skill folder is installed —
-[`skills/security-audit`](skills/security-audit): `SKILL.md`, the scanner and the license. The
-test fixtures stay here.
+Cursor and Codex (`.agents/skills/`) and many other agents. Only the skill folders under
+[`skills/`](skills) are installed — instructions, scanner and license. Test fixtures stay here.
 
-Prefer not to use the installer? Copy [`skills/security-audit`](skills/security-audit) into your
-agent's skills folder (e.g. `.claude/skills/security-audit/`).
+Prefer not to use the installer? Copy a folder from [`skills/`](skills) into your agent's skills
+folder (e.g. `.claude/skills/security-audit/`).
 
-## Use the scanner directly
+## Use the scanners directly
 
-From a clone of this repo, or from the installed skill folder:
+Every skill ships a read-only scanner you can run without an agent — locally or in CI:
 
 ```bash
-node skills/security-audit/scripts/audit.mjs path/to/app                   # Markdown to stdout
-node skills/security-audit/scripts/audit.mjs path/to/app --out report.md
-node skills/security-audit/scripts/audit.mjs path/to/app --json
-node skills/security-audit/scripts/audit.mjs path/to/app --fail-on high    # CI: exit 1 on high findings
+node skills/security-audit/scripts/audit.mjs path/to/app --fail-on high
+node skills/stripe-audit/scripts/audit.mjs path/to/app --out stripe-report.md
+node skills/env-hardening/scripts/scan.mjs path/to/app --json
+node skills/ship-check/scripts/check.mjs path/to/app --fail-on fail
+node skills/agent-rules/scripts/inspect.mjs path/to/app
 ```
 
-No dependencies, read-only.
+No dependencies. Secrets are masked in every report, and env file values are never printed.
 
-## Silencing a reviewed finding
+## How the skills work
 
-```ts
-// security-audit-ignore query-without-tenant-filter plans are global
-// security-audit: public — waitlist form (route is public on purpose; still rate limited)
-// security-audit-ignore-file hardcoded-secret
+1. The scanner finds candidates with static checks — fast, but heuristic.
+2. Your agent verifies each one by reading the code, dismisses false positives, and checks what
+   static analysis can't (authorization logic, payment flows, launch settings).
+3. You get a Markdown report with why each issue matters and how to fix it, and the agent offers
+   fixes — applying them only when you confirm.
+
+A clean report is not a guarantee. These skills catch the common mistakes; they don't replace a
+review of your business logic.
+
+## Development
+
+```bash
+npm ci
+npm test
 ```
 
-## Limits
-
-Static heuristics: it can miss issues (auth in middleware, authorization bugs, business logic)
-and flag safe code. The skill's instructions make the agent verify every finding and check the
-rest manually. A clean report is not a guarantee.
+Each skill has its fixtures in [`fixtures/<skill>/`](fixtures) and its tests in
+[`test/<skill>.test.mjs`](test).
 
 ## More from Kitwright
 
-This skill checks the rules that [Kitwright](https://kitwright.ai) kits enforce by design: every
+These skills check the rules that [Kitwright](https://kitwright.ai) kits enforce by design: every
 route and action behind an auth wrapper, tenant-scoped queries, verified idempotent webhooks,
 secrets validated at startup, rate limits and security headers — plus the `AGENTS.md`, skills and
 commands that keep your coding agent inside them. See [kitwright.ai](https://kitwright.ai).

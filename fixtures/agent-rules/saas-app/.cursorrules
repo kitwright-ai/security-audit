@@ -1,0 +1,8 @@
+You are an expert in TypeScript, Next.js App Router, React, Tailwind and shadcn/ui.
+
+- Use functional components and TypeScript interfaces.
+- Prefer server components; add "use client" only when you need state or effects.
+- Use the @/ import alias, never long relative paths.
+- Jobs belong to an organization. Always filter by organizationId.
+- Money is stored in cents as integers.
+- Do not edit files in drizzle/ by hand; run pnpm db:generate.
