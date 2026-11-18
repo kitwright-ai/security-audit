@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { isClientFile, isTestFile } from "../files.mjs";
 import { isSuppressed, snippet } from "../findings.mjs";
 
@@ -62,27 +62,64 @@ function insideGitRepo(root) {
   }
 }
 
-function gitignoreCovers(root, path) {
-  const file = join(root, ".gitignore");
-  if (!existsSync(file)) return false;
-  const name = path.split("/").pop() ?? path;
+// Converts a .gitignore glob to a RegExp: "**" + "/" (any dirs), "*", "?"; everything else literal.
+function globToRegExp(glob) {
+  let out = "";
+  for (let i = 0; i < glob.length; i++) {
+    const ch = glob[i];
+    if (ch === "*" && glob[i + 1] === "*" && glob[i + 2] === "/") {
+      out += "(?:.*/)?";
+      i += 2;
+    } else if (ch === "*" && glob[i + 1] === "*") {
+      out += ".*";
+      i += 1;
+    } else if (ch === "*") {
+      out += "[^/]*";
+    } else if (ch === "?") {
+      out += "[^/]";
+    } else {
+      out += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return new RegExp(`^${out}$`);
+}
+
+/** Rules of one .gitignore applied to `relPath` (relative to that file's dir). */
+function matchesGitignore(file, relPath) {
+  const name = relPath.split("/").pop() ?? relPath;
   const rules = readFileSync(file, "utf8")
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith("#"));
-  let ignored = false;
+  let ignored;
   for (const rule of rules) {
     const negate = rule.startsWith("!");
-    const pattern = (negate ? rule.slice(1) : rule).replace(/^\//, "");
-    const re = new RegExp(
-      `^${pattern
-        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-        .replace(/\*/g, ".*")
-        .replace(/\?/g, ".")}$`,
-    );
-    if (re.test(name) || re.test(path)) ignored = !negate;
+    const pattern = (negate ? rule.slice(1) : rule).replace(/^\//, "").replace(/\/$/, "");
+    const re = globToRegExp(pattern);
+    if (re.test(name) || re.test(relPath)) ignored = !negate;
   }
   return ignored;
+}
+
+/**
+ * True if a .gitignore in the project or any parent directory ignores the file
+ * (monorepos keep the rule at the repo root). The nearest file that has a
+ * matching rule wins, like git.
+ */
+function gitignoreCovers(root, path) {
+  let dir = join(root, dirname(path));
+  const abs = join(root, path);
+  for (;;) {
+    const file = join(dir, ".gitignore");
+    if (existsSync(file)) {
+      const verdict = matchesGitignore(file, relative(dir, abs).split(sep).join("/"));
+      if (verdict !== undefined) return verdict;
+    }
+    if (existsSync(join(dir, ".git"))) return false;
+    const parent = dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
 }
 
 function decodeJwtRole(segment) {

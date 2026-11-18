@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "kitwright-security-audit": "./scripts/audit.mjs"
+    "kitwright-security-audit": "./skills/security-audit/scripts/audit.mjs"
   },
   "scripts": {
     "test": "vitest run"
@@ -22,8 +22,7 @@
     "node": ">=18"
   },
   "files": [
-    "scripts",
-    "SKILL.md",
+    "skills",
     "README.md",
     "LICENSE"
   ],

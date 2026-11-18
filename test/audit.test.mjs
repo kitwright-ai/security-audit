@@ -1,15 +1,17 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { runAudit } from "../scripts/lib/audit.mjs";
-import { isSuppressed, maskSecrets } from "../scripts/lib/findings.mjs";
-import { toMarkdown } from "../scripts/lib/report.mjs";
+import { runAudit } from "../skills/security-audit/scripts/lib/audit.mjs";
+import { isSuppressed, maskSecrets } from "../skills/security-audit/scripts/lib/findings.mjs";
+import { toMarkdown } from "../skills/security-audit/scripts/lib/report.mjs";
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const INSECURE = here("../fixtures/insecure-app");
 const SECURE = here("../fixtures/secure-app");
-const CLI = here("../scripts/audit.mjs");
+const CLI = here("../skills/security-audit/scripts/audit.mjs");
 
 const insecure = runAudit(INSECURE, { git: false });
 const at = (check, file) =>
@@ -88,6 +90,27 @@ describe("no false positives", () => {
   const fieldService = here("../../../kits/field-service");
   it.runIf(existsSync(fieldService))("kits/field-service has zero findings", () => {
     expect(runAudit(fieldService).findings).toEqual([]);
+  });
+});
+
+describe("env files in monorepos", () => {
+  const project = (rules) => {
+    const repo = mkdtempSync(join(tmpdir(), "audit-gitignore-"));
+    writeFileSync(join(repo, ".gitignore"), rules);
+    const app = join(repo, "apps", "web");
+    mkdirSync(app, { recursive: true });
+    writeFileSync(join(app, ".env.local"), "SECRET=1\n");
+    return app;
+  };
+  const envFindings = (dir) =>
+    runAudit(dir, { git: false }).findings.filter((f) => f.check.startsWith("env-file"));
+
+  it("honours a .gitignore in a parent directory", () => {
+    expect(envFindings(project(".env*\n!.env.example\n"))).toEqual([]);
+  });
+
+  it("flags the file when the parent rule re-includes it", () => {
+    expect(envFindings(project(".env*\n!apps/**/.env*\n"))).toHaveLength(1);
   });
 });
 
